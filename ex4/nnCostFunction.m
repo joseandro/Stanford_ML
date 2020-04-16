@@ -1,4 +1,4 @@
-function [J grad] = nnCostFunction(nn_params, ...
+function [J grad Y] = nnCostFunction(nn_params, ...
                                    input_layer_size, ...
                                    hidden_layer_size, ...
                                    num_labels, ...
@@ -62,29 +62,58 @@ Theta2_grad = zeros(size(Theta2));
 %               and Theta2_grad from Part 2.
 %
 
+% Part 1
+K = num_labels;
+Y = eye(K);
+Y = Y(y, :);
 
+a1 = [ones(m, 1) X];%5000x401
 
+z2 = a1*Theta1';
+a2 = sigmoid(z2);
+a2 = [ones(m, 1) a2];
 
+z3 = a2*Theta2';
+a3 = sigmoid(z3); 
 
+cost = sum((-Y .* log(a3)) - ((1 - Y) .* log(1 - a3)), 2);
+J = (1 / m) * sum(cost);
 
+%Regularized cost function
+Theta1NoBias = Theta1(:, 2:end);
+Theta2NoBias = Theta2(:, 2:end);
 
+Theta1NoBiasSqSum = sum(Theta1NoBias .^ 2, 'all');
+Theta2NoBiasSqSum = sum(Theta2NoBias .^ 2, 'all');
 
+reg  = (lambda / (2 * m)) * (Theta1NoBiasSqSum + Theta2NoBiasSqSum);
+J = J + reg;
 
+%Part 2
+D1 = 0;
+D2 = 0;
 
+for t = 1:m
+    a1 = [1; X(t, :)']; %vector with bias term
 
+    z2 = Theta1*a1;
+    a2 = sigmoid(z2);
+    a2 = [1; a2];
+    
+    z3 = Theta2*a2;
+    a3 = sigmoid(z3); 
+    
+    d3 = a3 - Y(t, :)'; %error
+	
+	d2 = (Theta2NoBias' * d3) .* sigmoidGradient(z2); %only needed for hidden layer
 
+	D1 = D1 + (d2 * a1');
+	D2 = D2 + (d3 * a2');
+end
 
+Theta1_grad = 1/m * D1 + (lambda/m)*[zeros(size(Theta1, 1), 1) Theta1NoBias];
+Theta2_grad = 1/m * D2 + (lambda/m)*[zeros(size(Theta2, 1), 1) Theta2NoBias];
 
-
-
-
-
-
-% -------------------------------------------------------------
-
-% =========================================================================
-
-% Unroll gradients
 grad = [Theta1_grad(:) ; Theta2_grad(:)];
 
 
